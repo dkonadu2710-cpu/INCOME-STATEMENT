@@ -11,7 +11,7 @@ from functools import wraps
 from flask import Flask, render_template, redirect, url_for, flash, request, jsonify, send_file, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
-from flask_wtf import FlaskForm
+from flask_wtf import FlaskForm, CSRFProtect
 from wtforms import StringField, PasswordField, SelectField, DecimalField, TextAreaField, DateField, HiddenField, BooleanField
 from wtforms.validators import DataRequired, NumberRange, Optional, Length
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -28,6 +28,9 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'pcg-hobor-secret-key-change-in-production-2024'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///pcg_hobor_finance.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Initialize CSRF protection
+csrf = CSRFProtect(app)
 
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
