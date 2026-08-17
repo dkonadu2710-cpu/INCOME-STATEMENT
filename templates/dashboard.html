@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - PCG Hobor Finance{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 20px;">Dashboard</h1>
+
+<!-- Current Balances -->
+<div class="card">
+    <h3>Current Balances (from Latest Approved Session)</h3>
+    <div style="margin-top: 15px;">
+        <div class="balance-card">
+            <div class="label">Mobile Money</div>
+            <div class="amount">{{ current_balances.momo|format_currency }}</div>
+        </div>
+        <div class="balance-card">
+            <div class="label">Bank</div>
+            <div class="amount">{{ current_balances.bank|format_currency }}</div>
+        </div>
+        <div class="balance-card">
+            <div class="label">Cash</div>
+            <div class="amount">{{ current_balances.cash|format_currency }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    {% if current_user.role == 'admin' %}
+    <!-- Pending Approvals for Admin -->
+    <div class="card">
+        <h3>Pending Approvals</h3>
+        {% if pending_reports %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Submitted By</th>
+                    <th>Submitted At</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for report in pending_reports %}
+                <tr>
+                    <td>{{ report.session_date|format_date }}</td>
+                    <td>{{ report.submitted_by.full_name }}</td>
+                    <td>{{ report.submitted_at|format_datetime }}</td>
+                    <td><a href="{{ url_for('view_session', session_id=report.id) }}" class="btn btn-primary">Review</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No pending approvals.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <!-- Recent Sessions -->
+    <div class="card">
+        <h3>Recent Sessions</h3>
+        {% if user_reports %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for report in user_reports %}
+                <tr>
+                    <td>{{ report.session_date|format_date }}</td>
+                    <td><span class="status-badge status-{{ report.status }}">{{ report.status }}</span></td>
+                    <td><a href="{{ url_for('view_session', session_id=report.id) }}" class="btn btn-secondary">View</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <a href="{{ url_for('sessions_list') }}" class="btn btn-primary mt-2">View All Sessions</a>
+        {% else %}
+        <p>No sessions yet.</p>
+        <a href="{{ url_for('new_session') }}" class="btn btn-success mt-2">Create New Session</a>
+        {% endif %}
+    </div>
+    
+    <!-- Recent Activity Log -->
+    <div class="card">
+        <h3>Recent Activity</h3>
+        {% if recent_activity %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Action</th>
+                    <th>User</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in recent_activity %}
+                <tr>
+                    <td>{{ log.action }}</td>
+                    <td>{{ log.user.username if log.user else 'Unknown' }}</td>
+                    <td>{{ log.timestamp|format_datetime }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if current_user.role == 'admin' %}
+        <a href="{{ url_for('audit_log') }}" class="btn btn-secondary mt-2">View Full Audit Log</a>
+        {% endif %}
+        {% else %}
+        <p>No recent activity.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="card mt-2">
+    <h3>Quick Actions</h3>
+    <a href="{{ url_for('new_session') }}" class="btn btn-success">New Session Report</a>
+    <a href="{{ url_for('summary_report') }}" class="btn btn-primary">Generate Periodic Report</a>
+</div>
+{% endblock %}
