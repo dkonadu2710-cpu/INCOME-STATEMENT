@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}View Session - PCG Hobor Finance{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h1>Session Report - {{ session_report.session_date|format_date }}</h1>
+    <div>
+        <a href="{{ url_for('sessions_list') }}" class="btn btn-secondary">Back to List</a>
+        {% if session_report.status in ['draft', 'rejected'] and (current_user.role == 'admin' or session_report.submitted_by_id == current_user.id) %}
+        <a href="{{ url_for('edit_session', session_id=session_report.id) }}" class="btn btn-primary">Edit</a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Status Badge -->
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h3>Status: <span class="status-badge status-{{ session_report.status }}">{{ session_report.status|upper }}</span></h3>
+        <a href="{{ url_for('export_session_pdf', session_id=session_report.id) }}" class="btn btn-primary">Download PDF</a>
+    </div>
+    
+    {% if session_report.submitted_at %}
+    <p>Submitted by {{ session_report.submitted_by.full_name }} on {{ session_report.submitted_at|format_datetime }}</p>
+    {% endif %}
+    
+    {% if session_report.approved_at %}
+    <p>Approved by {{ session_report.approved_by.full_name }} on {{ session_report.approved_at|format_datetime }}</p>
+    {% endif %}
+    
+    {% if session_report.rejection_reason %}
+    <div style="background: #f8d7da; padding: 15px; border-radius: 4px; margin-top: 15px;">
+        <strong>Rejection Reason:</strong>
+        <p>{{ session_report.rejection_reason }}</p>
+    </div>
+    {% endif %}
+    
+    {% if session_report.admin_comments %}
+    <div style="background: #d1ecf1; padding: 15px; border-radius: 4px; margin-top: 15px;">
+        <strong>Admin Comments:</strong>
+        <p>{{ session_report.admin_comments }}</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Opening Balances -->
+<div class="card">
+    <h3>Opening Balances (Brought Forward)</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Fund</th>
+                <th>Amount (GHS)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Mobile Money</td>
+                <td>{{ session_report.balance_bf_momo|format_currency }}</td>
+            </tr>
+            <tr>
+                <td>Bank</td>
+                <td>{{ session_report.balance_bf_bank|format_currency }}</td>
+            </tr>
+            <tr>
+                <td>Cash</td>
+                <td>{{ session_report.balance_bf_cash|format_currency }}</td>
+            </tr>
+            <tr style="background: #e9ecef; font-weight: bold;">
+                <td>TOTAL</td>
+                <td>{{ (session_report.balance_bf_momo + session_report.balance_bf_bank + session_report.balance_bf_cash)|format_currency }}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Income Transactions -->
+<div class="card">
+    <h3>Income Transactions</h3>
+    {% if session_report.income_transactions %}
+    <table>
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th>Description</th>
+                <th>Fund</th>
+                <th>Amount (GHS)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in session_report.income_transactions %}
+            <tr>
+                <td>{{ t.category.name }}</td>
+                <td>{{ t.description or '-' }}</td>
+                <td>{{ t.fund|upper }}</td>
+                <td>{{ t.amount|format_currency }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr style="background: #d4edda; font-weight: bold;">
+                <td colspan="3">TOTAL INCOME</td>
+                <td>{{ session_report.income_transactions|sum(attribute='amount')|format_currency }}</td>
+            </tr>
+        </tfoot>
+    </table>
+    {% else %}
+    <p>No income transactions recorded.</p>
+    {% endif %}
+</div>
+
+<!-- Expenditure Transactions -->
+<div class="card">
+    <h3>Expenditure Transactions</h3>
+    {% if session_report.expenditure_transactions %}
+    <table>
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th>Description</th>
+                <th>Fund</th>
+                <th>Amount (GHS)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in session_report.expenditure_transactions %}
+            <tr>
+                <td>{{ t.category.name }}</td>
+                <td>{{ t.description or '-' }}</td>
+                <td>{{ t.fund|upper }}</td>
+                <td>{{ t.amount|format_currency }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr style="background: #f8d7da; font-weight: bold;">
+                <td colspan="3">TOTAL EXPENDITURE</td>
+                <td>{{ session_report.expenditure_transactions|sum(attribute='amount')|format_currency }}</td>
+            </tr>
+        </tfoot>
+    </table>
+    {% else %}
+    <p>No expenditure transactions recorded.</p>
+    {% endif %}
+</div>
+
+<!-- Closing Balances -->
+{% set closing = session_report.calculate_closing_balances() %}
+<div class="card">
+    <h3>Closing Balances (Carried Down)</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Fund</th>
+                <th>Calculation</th>
+                <th>Amount (GHS)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Mobile Money</td>
+                <td>{{ session_report.balance_bf_momo|format_currency }} + Income - Expenditure</td>
+                <td>{{ closing.momo|format_currency }}</td>
+            </tr>
+            <tr>
+                <td>Bank</td>
+                <td>{{ session_report.balance_bf_bank|format_currency }} + Income - Expenditure</td>
+                <td>{{ closing.bank|format_currency }}</td>
+            </tr>
+            <tr>
+                <td>Cash</td>
+                <td>{{ session_report.balance_bf_cash|format_currency }} + Income - Expenditure</td>
+                <td>{{ closing.cash|format_currency }}</td>
+            </tr>
+            <tr style="background: #1a5f7a; color: white; font-weight: bold;">
+                <td>TOTAL</td>
+                <td></td>
+                <td>{{ (closing.momo + closing.bank + closing.cash)|format_currency }}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Net Position -->
+<div class="card">
+    <h3>Net Position for the Day</h3>
+    {% set net = session_report.get_net_position() %}
+    <p style="font-size: 1.5em; color: {{ 'green' if net >= 0 else 'red' }};">
+        <strong>GHS {{ net|format_currency }}</strong>
+        {% if net >= 0 %}
+        (Surplus)
+        {% else %}
+        (Deficit)
+        {% endif %}
+    </p>
+    <p style="margin-top: 10px;">
+        Total Income: {{ session_report.income_transactions|sum(attribute='amount')|format_currency }} - 
+        Total Expenditure: {{ session_report.expenditure_transactions|sum(attribute='amount')|format_currency }}
+    </p>
+</div>
+
+<!-- Admin Actions -->
+{% if current_user.role == 'admin' %}
+<div class="card">
+    <h3>Admin Actions</h3>
+    
+    {% if session_report.status == 'submitted' %}
+    <form method="POST" action="{{ url_for('approve_session', session_id=session_report.id) }}" style="display: inline;">
+        <button type="submit" class="btn btn-success">Approve Session</button>
+    </form>
+    <a href="{{ url_for('reject_session', session_id=session_report.id) }}" class="btn btn-danger">Reject Session</a>
+    {% elif session_report.status == 'approved' %}
+    <form method="POST" action="{{ url_for('reopen_session', session_id=session_report.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to reopen this approved session? This will unlock it for editing.');">
+        <button type="submit" class="btn btn-warning">Reopen Session</button>
+    </form>
+    {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

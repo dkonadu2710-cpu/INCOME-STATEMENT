@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Reject Session - PCG Hobor Finance{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 600px; margin: 50px auto;">
+    <h2>Reject Session Report</h2>
+    <p>Date: {{ session_report.session_date|format_date }}</p>
+    
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        
+        <div class="form-group">
+            {{ form.rejection_reason.label }}
+            {{ form.rejection_reason(rows=5) }}
+            {% if form.rejection_reason.errors %}
+            <small style="color: red;">{{ form.rejection_reason.errors[0] }}</small>
+            {% endif %}
+        </div>
+        
+        <button type="submit" class="btn btn-danger">Reject Session</button>
+        <a href="{{ url_for('view_session', session_id=session_report.id) }}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

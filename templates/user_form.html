@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}{% if user %}Edit User{% else %}New User{% endif %} - PCG Hobor Finance{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 500px; margin: 0 auto;">
+    <h2>{% if user %}Edit User{% else %}Add New User{% endif %}</h2>
+    
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        
+        <div class="form-group">
+            {{ form.username.label }}
+            {% if user %}
+            {{ form.username(disabled=true) }}
+            <small>Username cannot be changed.</small>
+            {% else %}
+            {{ form.username() }}
+            {% endif %}
+            {% if form.username.errors %}
+            <small style="color: red;">{{ form.username.errors[0] }}</small>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            {{ form.full_name.label }}
+            {{ form.full_name() }}
+            {% if form.full_name.errors %}
+            <small style="color: red;">{{ form.full_name.errors[0] }}</small>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            {{ form.password.label }}
+            {{ form.password() }}
+            {% if user %}
+            <small>Leave blank to keep current password.</small>
+            {% endif %}
+            {% if form.password.errors %}
+            <small style="color: red;">{{ form.password.errors[0] }}</small>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            {{ form.role.label }}
+            {{ form.role() }}
+            {% if form.role.errors %}
+            <small style="color: red;">{{ form.role.errors[0] }}</small>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            {{ form.is_active_flag.label }}
+            {{ form.is_active_flag() }}
+        </div>
+        
+        <button type="submit" class="btn btn-success">{% if user %}Update User{% else %}Create User{% endif %}</button>
+        <a href="{{ url_for('users_list') }}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}
