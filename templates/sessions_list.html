@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Sessions - PCG Hobor Finance{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h1>Session Reports</h1>
+    <a href="{{ url_for('new_session') }}" class="btn btn-success">New Session</a>
+</div>
+
+<!-- Filters -->
+<div class="card">
+    <form method="GET" style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
+        <div class="form-group" style="margin-bottom: 0;">
+            <label>Status</label>
+            <select name="status" onchange="this.form.submit()">
+                <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All</option>
+                <option value="draft" {% if status_filter == 'draft' %}selected{% endif %}>Draft</option>
+                <option value="submitted" {% if status_filter == 'submitted' %}selected{% endif %}>Submitted</option>
+                <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Approved</option>
+                <option value="rejected" {% if status_filter == 'rejected' %}selected{% endif %}>Rejected</option>
+            </select>
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+            <label>From Date</label>
+            <input type="date" name="date_from" value="{{ date_from or '' }}" onchange="this.form.submit()">
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+            <label>To Date</label>
+            <input type="date" name="date_to" value="{{ date_to or '' }}" onchange="this.form.submit()">
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+            <button type="button" onclick="window.location='{{ url_for('sessions_list') }}'" class="btn btn-secondary">Clear Filters</button>
+        </div>
+    </form>
+</div>
+
+<!-- Sessions Table -->
+<div class="card">
+    {% if sessions.items %}
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>B/F Momo</th>
+                <th>B/F Bank</th>
+                <th>B/F Cash</th>
+                <th>Income</th>
+                <th>Expenditure</th>
+                <th>C/D Momo</th>
+                <th>C/D Bank</th>
+                <th>C/D Cash</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for session in sessions.items %}
+            {% set closing = session.calculate_closing_balances() %}
+            {% set total_income = session.income_transactions|sum(attribute='amount') %}
+            {% set total_expenditure = session.expenditure_transactions|sum(attribute='amount') %}
+            <tr>
+                <td>{{ session.session_date|format_date }}</td>
+                <td>{{ session.balance_bf_momo|format_currency }}</td>
+                <td>{{ session.balance_bf_bank|format_currency }}</td>
+                <td>{{ session.balance_bf_cash|format_currency }}</td>
+                <td>{{ total_income|format_currency }}</td>
+                <td>{{ total_expenditure|format_currency }}</td>
+                <td>{{ closing.momo|format_currency }}</td>
+                <td>{{ closing.bank|format_currency }}</td>
+                <td>{{ closing.cash|format_currency }}</td>
+                <td><span class="status-badge status-{{ session.status }}">{{ session.status }}</span></td>
+                <td>
+                    <a href="{{ url_for('view_session', session_id=session.id) }}" class="btn btn-secondary" style="padding: 5px 10px; font-size: 12px;">View</a>
+                    {% if session.status in ['draft', 'rejected'] %}
+                    <a href="{{ url_for('edit_session', session_id=session.id) }}" class="btn btn-primary" style="padding: 5px 10px; font-size: 12px;">Edit</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <!-- Pagination -->
+    {% if sessions.pages > 1 %}
+    <div style="margin-top: 20px;">
+        {% if sessions.has_prev %}
+        <a href="{{ url_for('sessions_list', page=sessions.prev_num, status=status_filter, date_from=date_from, date_to=date_to) }}" class="btn btn-secondary">Previous</a>
+        {% endif %}
+        
+        <span style="margin: 0 10px;">Page {{ sessions.page }} of {{ sessions.pages }}</span>
+        
+        {% if sessions.has_next %}
+        <a href="{{ url_for('sessions_list', page=sessions.next_num, status=status_filter, date_from=date_from, date_to=date_to) }}" class="btn btn-secondary">Next</a>
+        {% endif %}
+    </div>
+    {% endif %}
+    {% else %}
+    <p>No sessions found.</p>
+    <a href="{{ url_for('new_session') }}" class="btn btn-success">Create Your First Session</a>
+    {% endif %}
+</div>
+{% endblock %}

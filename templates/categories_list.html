@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Categories - PCG Hobor Finance{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h1>Transaction Categories</h1>
+    <a href="{{ url_for('new_category') }}" class="btn btn-success">Add New Category</a>
+</div>
+
+<div class="card">
+    {% if categories %}
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for category in categories %}
+            <tr>
+                <td>{{ category.name }}</td>
+                <td><span class="status-badge status-{{ 'approved' if category.category_type == 'income' else 'rejected' }}">{{ category.category_type|upper }}</span></td>
+                <td>
+                    {% if category.is_active %}
+                    <span style="color: green;">Active</span>
+                    {% else %}
+                    <span style="color: red;">Inactive</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('edit_category', category_id=category.id) }}" class="btn btn-primary" style="padding: 5px 10px; font-size: 12px;">Edit</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No categories found.</p>
+    {% endif %}
+</div>
+{% endblock %}
